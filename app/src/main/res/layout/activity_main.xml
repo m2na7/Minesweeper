@@ -61,6 +61,8 @@
         android:layout_width="339dp"
         android:layout_height="45dp"
         android:text="BREAK"
+        android:textOff="Break"
+        android:textOn="Flag"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
