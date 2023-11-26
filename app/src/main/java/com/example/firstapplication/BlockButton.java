@@ -6,35 +6,52 @@ import android.graphics.Color;
 import androidx.annotation.ColorInt;
 
 public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
+    private int x, y;
     boolean mine = false;
     boolean flag = false;
     int neighborMines = 0;
     static int flags = 0;
+    private boolean breakState = false;
 
     public BlockButton(Context context, int x, int y) {
         super(context);
+        this.x = x;
+        this.y = y;
+        setTextSize(14);
+        setTextColor(Color.BLACK);
     }
 
     public void toggleFlag() {
-        if (!mine) {
+        if (!breakState) {
             flag = !flag;
             if (flag) {
-                flags--;
-                setText("F");
-            } else {
                 flags++;
+                setText("🚩");
+            } else {
+                flags--;
                 setText("");
             }
         }
     }
 
     public boolean breakBlock() {
-        if (mine) {
-            setBackgroundColor(Color.BLUE);
-            return true;
-        } else {
-            return false;
+        if (!flag && !breakState) {
+            if (mine) {
+                setBackgroundColor(Color.WHITE);
+                setText("💣");
+                return true;
+            } else if (neighborMines == 0) {
+                setBackgroundColor(Color.WHITE);
+                breakState = true;
+                return false;
+            } else {
+                setBackgroundColor(Color.WHITE);
+                setText(String.valueOf(neighborMines));
+                breakState = true;
+                return false;
+            }
         }
+        return false;
     }
 
 

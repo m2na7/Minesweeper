@@ -24,6 +24,9 @@ public class MainActivity extends AppCompatActivity {
         TableLayout table;
         table = findViewById(R.id.tableLayout);
 
+        // 토글 버튼 생성
+        tButton = findViewById(R.id.toggleButton);
+
         // 9X9 지뢰찾기 버튼 생성
         BlockButton[][] buttons = new BlockButton[9][9];
         TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(
@@ -49,17 +52,51 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        tButton = findViewById(R.id.toggleButton);
 
-        // 10개의 지뢰 랜덤 배치
-        for (int i = 0; i < 10; i++) {
+        // 지뢰 생성
+        generateMines(buttons, 10);
+
+        // 주변 지뢰 갯수 계산
+        calculateNeighborMines(buttons);
+    }
+
+    // 지뢰 랜덤 배치
+    private void generateMines(BlockButton[][] buttons, int numMines) {
+        for (int i = 0; i < numMines; i++) {
             Random rand = new Random();
-            int pos[] = new int[2];
-            pos[0] = rand.nextInt(9);
-            pos[1] = rand.nextInt(9);
+            int x = rand.nextInt(9);
+            int y = rand.nextInt(9);
 
-            initializeMineButton(buttons[pos[0]][pos[1]]);
+            initializeMineButton(buttons[x][y]);
         }
+    }
+
+    // 버튼 주변의 지뢰 갯수를 계산
+    private void calculateNeighborMines(BlockButton[][] buttons) {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                // 각 버튼이 지뢰가 아니면 countSurroundingMines 호출
+                if (!buttons[i][j].isMine()) {
+                    int count = countSurroundingMines(buttons, i, j);
+                    buttons[i][j].setNeighborMines(count);
+                }
+            }
+        }
+    }
+
+    // 각각의 버튼에 대한 주변 지뢰의 갯수를 카운트
+    private int countSurroundingMines(BlockButton[][] buttons, int x, int y) {
+        int count = 0;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int ni = x + i;
+                int nj = y + j;
+                if (ni >= 0 && ni < 9 && nj >= 0 && nj < 9 && buttons[ni][nj].isMine()) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     // 지뢰 버튼 초기화 및 클릭 리스너 추가
