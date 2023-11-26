@@ -46,6 +46,7 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
                 return false;
             } else {
                 setBackgroundColor(Color.WHITE);
+                setCountColor(neighborMines);
                 setText(String.valueOf(neighborMines));
                 breakState = true;
                 return false;
@@ -53,7 +54,24 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
         }
         return false;
     }
+    public void setCountColor(int count) {
+        this.neighborMines = count;
 
+        switch (count) {
+            case 1:
+                setTextColor(Color.BLUE);
+                break;
+            case 2:
+                setTextColor(Color.parseColor("#4B7A47"));
+                break;
+            case 3:
+                setTextColor(Color.RED);
+                break;
+            default:
+                setTextColor(Color.BLACK);
+                break;
+        }
+    }
 
     public boolean isMine() {
         return mine;
