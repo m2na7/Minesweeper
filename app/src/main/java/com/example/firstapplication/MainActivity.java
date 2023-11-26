@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.util.Random;
@@ -14,6 +13,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private ToggleButton tButton;
+    BlockButton[][] buttons = new BlockButton[9][9];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,8 +27,7 @@ public class MainActivity extends AppCompatActivity {
         // 토글 버튼 생성
         tButton = findViewById(R.id.toggleButton);
 
-        // 9X9 지뢰찾기 버튼 생성
-        BlockButton[][] buttons = new BlockButton[9][9];
+        // 9X9 지뢰찾기 레이아웃 생성
         TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(
                 TableRow.LayoutParams.WRAP_CONTENT,
                 TableRow.LayoutParams.WRAP_CONTENT,
@@ -81,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
             for (int j = 0; j < 9; j++) {
                 // 각 버튼이 지뢰가 아니면 countSurroundingMines 호출
                 if (!buttons[i][j].isMine()) {
-                    int count = countSurroundingMines(buttons, i, j);
+                    int count = countMines(buttons, i, j);
                     buttons[i][j].setNeighborMines(count);
                 }
             }
@@ -89,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 각각의 버튼에 대한 주변 지뢰의 갯수를 카운트
-    private int countSurroundingMines(BlockButton[][] buttons, int x, int y) {
+    private int countMines(BlockButton[][] buttons, int x, int y) {
         int count = 0;
         for (int i = -1; i <= 1; i++) {
             for (int j = -1; j <= 1; j++) {
@@ -119,7 +118,31 @@ public class MainActivity extends AppCompatActivity {
         if (tButton.isChecked()) {
             button.toggleFlag();
         } else {
-            button.breakBlock();
+            if (button.breakBlock(buttons)) {
+                // 지뢰를 클릭한 경우 ..
+            } else if (button.getNeighborMines() == 0) {
+                openBlocks(buttons, button.getBlockX(), button.getBlockY());
+            }
+        }
+    }
+
+    // 주변 지뢰수가 0 -> 주변의 모든 블록 열기
+    private void openBlocks(BlockButton[][] buttons, int x, int y) {
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int ni = x + i;
+                int nj = y + j;
+
+                if (ni >= 0 && ni < 9 && nj >= 0 && nj < 9 &&
+                        !buttons[ni][nj].isMine() && !buttons[ni][nj].isFlag() && buttons[ni][nj].isClickable()) {
+                    buttons[ni][nj].breakBlock(buttons);
+
+                    // 재귀적으로 열도록 처리
+                    if (buttons[ni][nj].getNeighborMines() == 0) {
+                        openBlocks(buttons, ni, nj);
+                    }
+                }
+            }
         }
     }
 }
