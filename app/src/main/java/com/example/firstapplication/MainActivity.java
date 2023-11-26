@@ -62,10 +62,14 @@ public class MainActivity extends AppCompatActivity {
 
     // 지뢰 랜덤 배치
     private void generateMines(BlockButton[][] buttons, int numMines) {
+        Random rand = new Random();
+
         for (int i = 0; i < numMines; i++) {
-            Random rand = new Random();
-            int x = rand.nextInt(9);
-            int y = rand.nextInt(9);
+            int x, y;
+            do {
+                x = rand.nextInt(9);
+                y = rand.nextInt(9);
+            } while (buttons[x][y].isMine()); // 이미 지뢰가 있는 위치인지 확인
 
             initializeMineButton(buttons[x][y]);
         }
