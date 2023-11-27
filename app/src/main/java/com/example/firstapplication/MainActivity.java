@@ -6,19 +6,24 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-
+    private TextView mineCountTextView;
     private ToggleButton tButton;
     BlockButton[][] buttons = new BlockButton[9][9];
+    int numMines = 10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mineCountTextView = findViewById(R.id.textView3);
 
         // 테이블 레이아웃 생성
         TableLayout table;
@@ -51,16 +56,15 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-
         // 지뢰 생성
-        generateMines(buttons, 10);
+        generateMines(buttons);
 
         // 주변 지뢰 갯수 계산
         calculateNeighborMines(buttons);
     }
 
     // 지뢰 랜덤 배치
-    private void generateMines(BlockButton[][] buttons, int numMines) {
+    private void generateMines(BlockButton[][] buttons) {
         Random rand = new Random();
 
         for (int i = 0; i < numMines; i++) {
@@ -71,6 +75,16 @@ public class MainActivity extends AppCompatActivity {
             } while (buttons[x][y].isMine()); // 이미 지뢰가 있는 위치인지 확인
 
             initializeMineButton(buttons[x][y]);
+        }
+    }
+
+    // 남은 지뢰 갯수를 계산
+    private void updateMineCount(BlockButton button) {
+        int remainingMines = numMines - button.flags; // 전체 지뢰 갯수 - 깃발의 갯수
+        mineCountTextView.setText(String.format("%d", remainingMines));
+
+        if (button.flags > numMines) { // 깃발의 갯수 > 전체 지뢰 갯수 -> Toast 메시지 출력
+            Toast.makeText(this, "깃발의 갯수가 지뢰의 갯수보다 더 많습니다", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -103,9 +117,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 지뢰 버튼 초기화 및 클릭 리스너 추가
-    public void initializeMineButton(BlockButton b) {
-        b.setMine(true);
-        b.setOnClickListener(new View.OnClickListener() {
+    private void initializeMineButton(BlockButton button) {
+        button.setMine(true);
+        updateMineCount(button); // 초기 전체 지뢰 수
+
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 handleButtonClick((BlockButton) view);
@@ -115,14 +131,20 @@ public class MainActivity extends AppCompatActivity {
 
     // 토글버튼 상태에 따른 동작변화
     private void handleButtonClick(BlockButton button) {
-        if (tButton.isChecked()) {
+        if (tButton.isChecked()) {  // 깃발 꽂기 모드
             button.toggleFlag();
-        } else {
-            if (button.breakBlock(buttons)) {
-                // 지뢰를 클릭한 경우 ..
-            } else if (button.getNeighborMines() == 0) {
-                openBlocks(buttons, button.getBlockX(), button.getBlockY());
-            }
+            updateMineCount(button);
+        } else { // 블록 열기 모드
+            breakBlock(button);
+        }
+    }
+
+    // 블록 열기
+    private void breakBlock(BlockButton button) {
+        if (button.breakBlock(buttons)) {
+            // 지뢰를 클릭한 경우 ..
+        } else if (button.getNeighborMines() == 0 && !button.flag) {
+            openBlocks(buttons, button.getBlockX(), button.getBlockY());
         }
     }
 
