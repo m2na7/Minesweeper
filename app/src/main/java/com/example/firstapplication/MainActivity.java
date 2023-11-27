@@ -142,9 +142,17 @@ public class MainActivity extends AppCompatActivity {
     // 블록 열기
     private void breakBlock(BlockButton button) {
         if (button.breakBlock(buttons)) {
-            // 지뢰를 클릭한 경우 ..
+            if(button.isMine()) { // 지뢰 클릭시 게임 종료
+                disableButtons();
+                Toast.makeText(this, "Game Over", Toast.LENGTH_SHORT).show();
+            }
         } else if (button.getNeighborMines() == 0 && !button.flag) {
             openBlocks(buttons, button.getBlockX(), button.getBlockY());
+        }
+
+        if(checkGameWin()) {
+            disableButtons();
+            Toast.makeText(this, "Game Win", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -166,5 +174,26 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    // 게임 종료시 모든 버튼을 사용불가 상태로 변경
+    private void disableButtons() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                buttons[i][j].setEnabled(false);
+            }
+        }
+    }
+
+    // 게임 승리 조건에 충족하는지 확인
+    private boolean checkGameWin() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (!buttons[i][j].isMine() && buttons[i][j].isClickable()) {
+                    return false;
+                }
+            }
+        }
+        return true;  // 모든 승리 조건에 만족하면 true
     }
 }
