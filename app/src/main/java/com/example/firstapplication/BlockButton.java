@@ -4,21 +4,27 @@ import android.content.Context;
 import android.graphics.Color;
 
 public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
-    private int x, y;
-    boolean mine = false;
-    boolean flag = false;
-    int neighborMines = 0;
-    static int flags = 0;
-    private boolean breakState = false;
+    private int x, y; // 버튼 좌표
+    boolean mine; // 지뢰여부
+    boolean flag; // 깃발여부
+    int neighborMines; // 블록 주변의 지뢰 갯수
+    static int flags; // 깃발이 꽂힌 블록 수
+    private boolean breakState; // 블록 오픈 여부
 
     public BlockButton(Context context, int x, int y) {
         super(context);
         this.x = x;
         this.y = y;
-        setTextSize(14);
+        mine = false;
+        flag = false;
+        neighborMines = 0;
+        flags = 0;
+        breakState = false;
+        setTextSize(16);
         setTextColor(Color.BLACK);
     }
 
+    // 깃발 토글
     public void toggleFlag() {
         if (!breakState) {
             flag = !flag;
@@ -32,11 +38,11 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
         }
     }
 
+    // 블록 오픈
     public boolean breakBlock(BlockButton[][] buttons) {
         if (!flag && !breakState) {
             setClickable(false);
             if (mine) {
-                setBackgroundColor(Color.WHITE);
                 setText("💣");
                 return true;
             } else if (neighborMines == 0) {
@@ -54,6 +60,7 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
         return false;
     }
 
+    // 블록 주변의 지뢰 갯수에 따라 텍스트 색상 변경
     public void setCountColor(int count) {
         this.neighborMines = count;
 
@@ -75,6 +82,7 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
                 break;
         }
     }
+
     public int getBlockX() {
         return x;
     }
@@ -82,7 +90,6 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
     public int getBlockY() {
         return y;
     }
-
 
     public boolean isMine() {
         return mine;
@@ -94,10 +101,6 @@ public class BlockButton extends androidx.appcompat.widget.AppCompatButton {
 
     public boolean isFlag() {
         return flag;
-    }
-
-    public void setFlag(boolean flag) {
-        this.flag = flag;
     }
 
     public int getNeighborMines() {

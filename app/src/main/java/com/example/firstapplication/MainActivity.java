@@ -2,6 +2,7 @@ package com.example.firstapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -184,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
     private void breakBlock(BlockButton button) {
         if (button.breakBlock(buttons)) {
             if (button.isMine()) { // 지뢰 클릭시 게임 종료
+                buttons[button.getBlockX()][button.getBlockY()].setBackgroundColor(Color.RED); // 클릭한 지뢰 배경색 변경
                 endGame();
             }
         } else if (button.getNeighborMines() == 0 && !button.flag) {
@@ -225,6 +227,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // 게임 패배시 모든 블록을 오픈
+    private void openAllBlocks() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                buttons[i][j].breakBlock(buttons);
+            }
+        }
+    }
+
     // 게임 승리 조건에 충족하는지 확인
     private boolean checkGameWin() {
         for (int i = 0; i < 9; i++) {
@@ -239,14 +250,17 @@ public class MainActivity extends AppCompatActivity {
 
     // 게임종료
     private void endGame() {
-        disableButtons();  // 모든 버튼 비활성화
-        isGameOver = true;
-        String endTime = timerTextView.getText().toString(); // 게임 종료 시간
+        if (!isGameOver) { // 이미 게임이 종료되었는지 확인 (Toast 메시지 중복 출력 방지)
+            isGameOver = true;
+            disableButtons();
+            String endTime = timerTextView.getText().toString(); // 게임 종료 시간
 
-        if (checkGameWin()) {
-            Toast.makeText(this, "게임 승리\n경과 시간: " + endTime + " 초", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "게임 패배\n경과 시간: " + endTime + " 초", Toast.LENGTH_SHORT).show();
+            if (checkGameWin()) {
+                Toast.makeText(this, "게임 승리\n기록 : " + endTime + " 초", Toast.LENGTH_SHORT).show();
+            } else {
+                openAllBlocks();
+                Toast.makeText(this, "게임 패배\n기록 : " + endTime + " 초", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
