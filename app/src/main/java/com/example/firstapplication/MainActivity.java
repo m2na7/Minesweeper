@@ -3,6 +3,9 @@ package com.example.firstapplication;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.widget.Chronometer;
 import android.view.View;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -13,21 +16,25 @@ import android.widget.ToggleButton;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    private TextView mineCountTextView;
-    private ToggleButton tButton;
-    BlockButton[][] buttons = new BlockButton[9][9];
-    int numMines = 10;
+    private final int NUM_MINES = 10; // 전체 지뢰 갯수 설정
+    BlockButton[][] buttons = new BlockButton[9][9]; // 지뢰찾기 블록버튼
+    private ToggleButton tButton; // 깃발or블록오픈 모드변경 토글버튼
+    private TextView mineCountTextView; // 지뢰갯수 텍스트
+    private Chronometer timer; // 타이머
+    private TextView timerTextView; // 시간표시 텍스트
+    private Handler handler = new Handler(); // 시간측정을 위한 핸들러
+    boolean isGameOver = false; // 게임종료 여부
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mineCountTextView = findViewById(R.id.textView3);
+        mineCountTextView = findViewById(R.id.countTextView);
+        timerTextView = findViewById(R.id.timerTextView);
 
         // 테이블 레이아웃 생성
-        TableLayout table;
-        table = findViewById(R.id.tableLayout);
+        TableLayout table = findViewById(R.id.tableLayout);
 
         // 토글 버튼 생성
         tButton = findViewById(R.id.toggleButton);
@@ -56,6 +63,21 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        // 타이머 초기화
+        timer = new Chronometer(this);
+        timer.setBase(SystemClock.elapsedRealtime());
+
+        // 게임 시작 후 시간측정
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isGameOver) { // 게임이 종료되었는지 확인
+                    updateTimer();
+                    handler.postDelayed(this, 100);  // 0.1초마다 반복
+                }
+            }
+        }, 1000);  // 초기 실행은 1초 후
+
         // 지뢰 생성
         generateMines(buttons);
 
@@ -63,11 +85,30 @@ public class MainActivity extends AppCompatActivity {
         calculateNeighborMines(buttons);
     }
 
+    // 시간 측정 및 제한
+    private void updateTimer() {
+        long currentTime = SystemClock.elapsedRealtime() - timer.getBase();
+        timerTextView.setText(formatElapsedTime(currentTime));
+
+        // 999초 이상 경과하면 게임 패배
+        if (currentTime >= 999000) {
+            isGameOver = true;
+            disableButtons();
+            Toast.makeText(this, "Game Over 시간초과", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // 시간을 초단위로 변환
+    private String formatElapsedTime(long milliseconds) {
+        double seconds = milliseconds / 1000.0;  // 밀리초를 초로 변환
+        return String.format("%.1f", seconds);  // 소수점 한 자리까지만 출력
+    }
+
     // 지뢰 랜덤 배치
     private void generateMines(BlockButton[][] buttons) {
         Random rand = new Random();
 
-        for (int i = 0; i < numMines; i++) {
+        for (int i = 0; i < NUM_MINES; i++) {
             int x, y;
             do {
                 x = rand.nextInt(9);
@@ -80,10 +121,10 @@ public class MainActivity extends AppCompatActivity {
 
     // 남은 지뢰 갯수를 계산
     private void updateMineCount(BlockButton button) {
-        int remainingMines = numMines - button.flags; // 전체 지뢰 갯수 - 깃발의 갯수
+        int remainingMines = NUM_MINES - button.flags; // 전체 지뢰 갯수 - 깃발의 갯수
         mineCountTextView.setText(String.format("%d", remainingMines));
 
-        if (button.flags > numMines) { // 깃발의 갯수 > 전체 지뢰 갯수 -> Toast 메시지 출력
+        if (button.flags > NUM_MINES) { // 깃발의 갯수 > 전체 지뢰 갯수 -> Toast 메시지 출력
             Toast.makeText(this, "깃발의 갯수가 지뢰의 갯수보다 더 많습니다", Toast.LENGTH_SHORT).show();
         }
     }
@@ -142,17 +183,16 @@ public class MainActivity extends AppCompatActivity {
     // 블록 열기
     private void breakBlock(BlockButton button) {
         if (button.breakBlock(buttons)) {
-            if(button.isMine()) { // 지뢰 클릭시 게임 종료
-                disableButtons();
-                Toast.makeText(this, "Game Over", Toast.LENGTH_SHORT).show();
+            if (button.isMine()) { // 지뢰 클릭시 게임 종료
+                endGame();
             }
         } else if (button.getNeighborMines() == 0 && !button.flag) {
             openBlocks(buttons, button.getBlockX(), button.getBlockY());
         }
 
-        if(checkGameWin()) {
-            disableButtons();
-            Toast.makeText(this, "Game Win", Toast.LENGTH_SHORT).show();
+        // 승리 조건 충족시 게임 종료
+        if (checkGameWin()) {
+            endGame();
         }
     }
 
@@ -190,10 +230,23 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 if (!buttons[i][j].isMine() && buttons[i][j].isClickable()) {
-                    return false;
+                    return false;  // 아직 클릭되지 않은 버튼이 있으면 false 반환
                 }
             }
         }
-        return true;  // 모든 승리 조건에 만족하면 true
+        return true;  // 모든 조건에 만족하면 true 반환
+    }
+
+    // 게임종료
+    private void endGame() {
+        disableButtons();  // 모든 버튼 비활성화
+        isGameOver = true;
+        String endTime = timerTextView.getText().toString(); // 게임 종료 시간
+
+        if (checkGameWin()) {
+            Toast.makeText(this, "게임 승리\n경과 시간: " + endTime + " 초", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "게임 패배\n경과 시간: " + endTime + " 초", Toast.LENGTH_SHORT).show();
+        }
     }
 }
