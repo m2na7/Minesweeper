@@ -1,11 +1,14 @@
 package com.example.firstapplication;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.widget.Button;
 import android.widget.Chronometer;
 import android.view.View;
 import android.widget.TableLayout;
@@ -18,8 +21,10 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     private final int NUM_MINES = 10; // 전체 지뢰 갯수 설정
+    private TableLayout table; // 지뢰찾기 테이블 레이아웃
     BlockButton[][] buttons = new BlockButton[9][9]; // 지뢰찾기 블록버튼
     private ToggleButton tButton; // 깃발or블록오픈 모드변경 토글버튼
+    private Button replayButton; // 재도전 버튼
     private TextView mineCountTextView; // 지뢰갯수 텍스트
     private Chronometer timer; // 타이머
     private TextView timerTextView; // 시간표시 텍스트
@@ -33,19 +38,66 @@ public class MainActivity extends AppCompatActivity {
 
         mineCountTextView = findViewById(R.id.countTextView);
         timerTextView = findViewById(R.id.timerTextView);
-
-        // 테이블 레이아웃 생성
-        TableLayout table = findViewById(R.id.tableLayout);
-
-        // 토글 버튼 생성
         tButton = findViewById(R.id.toggleButton);
+        replayButton = findViewById(R.id.replayButton);
 
-        // 9X9 지뢰찾기 레이아웃 생성
+        startGame();
+    }
+
+    // 게임 시작
+    private void startGame() {
+        initializeTimer(); // 타이머 초기화
+        createLayout(); // 테이블, 버튼 레이아웃 생성
+        generateMines(buttons); // 지뢰 생성
+        calculateNeighborMines(buttons); // 주변 지뢰 갯수 계산
+    }
+
+    // 타이머 초기화
+    private void initializeTimer() {
+        timer = new Chronometer(this);
+        timer.setBase(SystemClock.elapsedRealtime());
+
+        // 게임 시작 후 시간측정
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isGameOver) { // 게임이 종료되었는지 확인
+                    updateTimer();
+                    handler.postDelayed(this, 100);  // 0.1초마다 반복
+                }
+            }
+        }, 100);
+    }
+
+    // 시간 측정 및 제한
+    private void updateTimer() {
+        long currentTime = SystemClock.elapsedRealtime() - timer.getBase();
+        timerTextView.setText(formatElapsedTime(currentTime));
+
+        // 999초 이상 경과하면 게임 패배
+        if (currentTime >= 999000) {
+            isGameOver = true;
+            disableBlocks();
+            Toast.makeText(this, "Game Over 시간초과", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // 시간을 초단위로 변환
+    private String formatElapsedTime(long milliseconds) {
+        double seconds = milliseconds / 1000.0;  // 밀리초를 초로 변환
+        return String.format("%.1f", seconds);  // 소수점 한 자리까지만 출력
+    }
+
+    // 초기 레이아웃 설정
+    private void createLayout() {
+        table = findViewById(R.id.tableLayout); // 테이블 레이아웃 생성
+
         TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(
                 TableRow.LayoutParams.WRAP_CONTENT,
                 TableRow.LayoutParams.WRAP_CONTENT,
                 1.0f);
 
+        // 9X9 지뢰찾기 버튼 생성
         for (int i = 0; i < 9; i++) {
             TableRow row = new TableRow(this);
             table.addView(row);
@@ -64,45 +116,30 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 타이머 초기화
-        timer = new Chronometer(this);
-        timer.setBase(SystemClock.elapsedRealtime());
-
-        // 게임 시작 후 시간측정
-        handler.postDelayed(new Runnable() {
+        // 재도전 버튼 생성
+        replayButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                if (!isGameOver) { // 게임이 종료되었는지 확인
-                    updateTimer();
-                    handler.postDelayed(this, 100);  // 0.1초마다 반복
-                }
+            public void onClick(View view) {
+                replayGame();
             }
-        }, 1000);  // 초기 실행은 1초 후
-
-        // 지뢰 생성
-        generateMines(buttons);
-
-        // 주변 지뢰 갯수 계산
-        calculateNeighborMines(buttons);
+        });
     }
 
-    // 시간 측정 및 제한
-    private void updateTimer() {
-        long currentTime = SystemClock.elapsedRealtime() - timer.getBase();
-        timerTextView.setText(formatElapsedTime(currentTime));
+    // 게임 재도전
+    private void replayGame() {
+        isGameOver = false;
+        mineCountTextView.setText(String.valueOf(NUM_MINES));
+        replayButton.setEnabled(true);
 
-        // 999초 이상 경과하면 게임 패배
-        if (currentTime >= 999000) {
-            isGameOver = true;
-            disableButtons();
-            Toast.makeText(this, "Game Over 시간초과", Toast.LENGTH_SHORT).show();
+        // 기존 클릭 리스너 해제
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                buttons[i][j].setOnClickListener(null);
+            }
         }
-    }
 
-    // 시간을 초단위로 변환
-    private String formatElapsedTime(long milliseconds) {
-        double seconds = milliseconds / 1000.0;  // 밀리초를 초로 변환
-        return String.format("%.1f", seconds);  // 소수점 한 자리까지만 출력
+        table.removeAllViews(); // 기존 테이블 제거
+        startGame();
     }
 
     // 지뢰 랜덤 배치
@@ -193,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 승리 조건 충족시 게임 종료
-        if (checkGameWin()) {
+        if (checkWin()) {
             endGame();
         }
     }
@@ -219,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 게임 종료시 모든 버튼을 사용불가 상태로 변경
-    private void disableButtons() {
+    private void disableBlocks() {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 buttons[i][j].setEnabled(false);
@@ -237,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 게임 승리 조건에 충족하는지 확인
-    private boolean checkGameWin() {
+    private boolean checkWin() {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 if (!buttons[i][j].isMine() && buttons[i][j].isClickable()) {
@@ -252,15 +289,56 @@ public class MainActivity extends AppCompatActivity {
     private void endGame() {
         if (!isGameOver) { // 이미 게임이 종료되었는지 확인 (Toast 메시지 중복 출력 방지)
             isGameOver = true;
-            disableButtons();
-            String endTime = timerTextView.getText().toString(); // 게임 종료 시간
+            disableBlocks();
+            replayButton.setEnabled(false);
 
-            if (checkGameWin()) {
-                Toast.makeText(this, "게임 승리\n기록 : " + endTime + " 초", Toast.LENGTH_SHORT).show();
+            if (checkWin()) {
+                showWinDialog();
             } else {
                 openAllBlocks();
-                Toast.makeText(this, "게임 패배\n기록 : " + endTime + " 초", Toast.LENGTH_SHORT).show();
+                showLoseDialog();
             }
         }
     }
+
+    // 승리시 출력 Dialog
+    private void showWinDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        String endTime = timerTextView.getText().toString(); // 게임 종료 시간
+
+        builder.setMessage("🎊Congratulations🎊\n" + "기록 : " + endTime + "초\n" + "게임을 재시작하시겠습니까?")
+                .setCancelable(false)
+                .setPositiveButton("예", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        replayGame();
+                    }
+                })
+                .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    // 패배시 출력 Dialog
+    private void showLoseDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("😓Game Over😓\n게임을 재시작하시겠습니까?")
+                .setCancelable(false)
+                .setPositiveButton("예", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        replayGame();
+                    }
+                })
+                .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
 }
