@@ -3,7 +3,6 @@ package com.example.firstapplication;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,7 +19,7 @@ import android.widget.ToggleButton;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    private final int NUM_MINES = 10; // 전체 지뢰 갯수 설정
+    private final int NUM_MINES = 3; // 전체 지뢰 갯수 설정
     private TableLayout table; // 지뢰찾기 테이블 레이아웃
     BlockButton[][] buttons = new BlockButton[9][9]; // 지뢰찾기 블록버튼
     private ToggleButton tButton; // 깃발or블록오픈 모드변경 토글버튼
@@ -130,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
         isGameOver = false;
         mineCountTextView.setText(String.valueOf(NUM_MINES));
         replayButton.setEnabled(true);
+        tButton.setEnabled(true);
 
         // 기존 클릭 리스너 해제
         for (int i = 0; i < 9; i++) {
@@ -257,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
 
     // 게임 종료시 모든 버튼을 사용불가 상태로 변경
     private void disableBlocks() {
+        tButton.setEnabled(false);
+        replayButton.setEnabled(false);
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 buttons[i][j].setEnabled(false);
@@ -290,7 +292,6 @@ public class MainActivity extends AppCompatActivity {
         if (!isGameOver) { // 이미 게임이 종료되었는지 확인 (Toast 메시지 중복 출력 방지)
             isGameOver = true;
             disableBlocks();
-            replayButton.setEnabled(false);
 
             if (checkWin()) {
                 showWinDialog();
@@ -303,42 +304,40 @@ public class MainActivity extends AppCompatActivity {
 
     // 승리시 출력 Dialog
     private void showWinDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String endTime = timerTextView.getText().toString(); // 게임 종료 시간
+        String endTime = timerTextView.getText().toString();
 
-        builder.setMessage("🎊Congratulations🎊\n" + "기록 : " + endTime + "초\n" + "게임을 재시작하시겠습니까?")
+        View customLayout = getLayoutInflater().inflate(R.layout.custom_dialog, null);
+        TextView titleTextView = customLayout.findViewById(R.id.dialogTitle);
+        TextView messageTextView = customLayout.findViewById(R.id.dialogMessage);
+
+        titleTextView.setText("🎊Congratulations🎊");
+        messageTextView.setText("기록 : " + endTime + "초\n" + "게임을 재시작하시겠습니까?");
+
+        new AlertDialog.Builder(this)
+                .setView(customLayout)
                 .setCancelable(false)
-                .setPositiveButton("예", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        replayGame();
-                    }
-                })
-                .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                    }
-                });
-        AlertDialog alert = builder.create();
-        alert.show();
+                .setPositiveButton("예", (dialog, id) -> replayGame())
+                .setNegativeButton("아니오", (dialog, id) -> dialog.dismiss())
+                .create()
+                .show();
     }
 
     // 패배시 출력 Dialog
     private void showLoseDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("😓Game Over😓\n게임을 재시작하시겠습니까?")
+        View customLayout = getLayoutInflater().inflate(R.layout.custom_dialog, null);
+        TextView titleTextView = customLayout.findViewById(R.id.dialogTitle);
+        TextView messageTextView = customLayout.findViewById(R.id.dialogMessage);
+
+        titleTextView.setText("😓Game Over😓");
+        messageTextView.setText("게임을 재시작하시겠습니까?");
+
+        new AlertDialog.Builder(this)
+                .setView(customLayout)
                 .setCancelable(false)
-                .setPositiveButton("예", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        replayGame();
-                    }
-                })
-                .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                    }
-                });
-        AlertDialog alert = builder.create();
-        alert.show();
+                .setPositiveButton("예", (dialog, id) -> replayGame())
+                .setNegativeButton("아니오", (dialog, id) -> dialog.dismiss())
+                .create()
+                .show();
     }
 
 }

@@ -2,7 +2,8 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.FirstApplication" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@android:color/black</item>
+        <item name="colorPrimaryDark">@android:color/white</item> <!-- 상단바 흰색 설정 -->
     </style>
 
     <style name="Theme.FirstApplication" parent="Base.Theme.FirstApplication" />
