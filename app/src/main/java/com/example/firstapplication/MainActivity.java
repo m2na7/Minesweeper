@@ -19,7 +19,7 @@ import android.widget.ToggleButton;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    private final int NUM_MINES = 3; // 전체 지뢰 갯수 설정
+    private final int NUM_MINES = 10; // 전체 지뢰 갯수 설정
     private TableLayout table; // 지뢰찾기 테이블 레이아웃
     BlockButton[][] buttons = new BlockButton[9][9]; // 지뢰찾기 블록버튼
     private ToggleButton tButton; // 깃발or블록오픈 모드변경 토글버튼
